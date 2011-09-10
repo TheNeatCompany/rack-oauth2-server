@@ -18,14 +18,15 @@ module Rack
           #
           # You can set optional expiration in seconds. If zero or nil, token
           # never expires.
-          def get_token_for(identity, client, scope, expires = nil)
+          def get_token_for(identity, client, scope, expires = nil, instance_name = "default-client", instance_description = "default client")
             raise ArgumentError, "Identity must be String or Integer" unless String === identity || Integer === identity
             scope = Utils.normalize_scope(scope) & client.scope # Only allowed scope
-            unless token = collection.find_one({ :identity=>identity, :scope=>scope, :client_id=>client.id, :revoked=>nil })
+            unless token = collection.find_one({ :identity=>identity, :scope=>scope, :client_id=>client.id, :instance_name => instance_name, :revoked=>nil })
               expires_at = Time.now.to_i + expires if expires && expires != 0
               token = { :_id=>Server.secure_random, :identity=>identity, :scope=>scope,
                         :client_id=>client.id, :created_at=>Time.now.to_i,
-                        :expires_at=>expires_at, :revoked=>nil }
+                        :expires_at=>expires_at, :revoked=>nil, :instance_name => instance_name,
+                        :instance_description => instance_description }
               collection.insert token
               Client.collection.update({ :_id=>client.id }, { :$inc=>{ :tokens_granted=>1 } })
             end
@@ -100,6 +101,10 @@ module Rack
         attr_accessor :last_access
         # Timestamp of previous access using this token, rounded up to hour.
         attr_accessor :prev_access
+        # Instance name for a specific client instance
+        attr_accessor :instance_name
+        # Instance description for a specific client instance
+        attr_accessor :instance_description
 
         # Updates the last access timestamp.
         def access!

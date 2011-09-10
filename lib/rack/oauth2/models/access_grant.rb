@@ -12,14 +12,15 @@ module Rack
           end
 
           # Create a new access grant.
-          def create(identity, client, scope, redirect_uri = nil, expires = nil)
+          def create(identity, client, scope, redirect_uri = nil, expires = nil, instance_name = "default-client", instance_description = "default client" )
             raise ArgumentError, "Identity must be String or Integer" unless String === identity || Integer === identity
             scope = Utils.normalize_scope(scope) & client.scope # Only allowed scope
             expires_at = Time.now.to_i + (expires || 300)
             fields = { :_id=>Server.secure_random, :identity=>identity, :scope=>scope,
                        :client_id=>client.id, :redirect_uri=>client.redirect_uri || redirect_uri,
                        :created_at=>Time.now.to_i, :expires_at=>expires_at, :granted_at=>nil,
-                       :access_token=>nil, :revoked=>nil }
+                       :access_token=>nil, :revoked=>nil, :instance_name => instance_name, 
+                       :instance_description => instance_description }
             collection.insert fields
             Server.new_instance self, fields
           end
@@ -50,6 +51,10 @@ module Rack
         attr_accessor :access_token
         # Timestamp if revoked.
         attr_accessor :revoked
+        # Instance name for a specific client instance
+        attr_accessor :instance_name
+        # Instance description for a specific client instance
+        attr_accessor :instance_description
 
         # Authorize access and return new access token.
         #
@@ -60,7 +65,7 @@ module Rack
         def authorize!(expires_in = nil)
           raise InvalidGrantError, "You can't use the same access grant twice" if self.access_token || self.revoked
           client = Client.find(client_id) or raise InvalidGrantError
-          access_token = AccessToken.get_token_for(identity, client, scope, expires_in)
+          access_token = AccessToken.get_token_for(identity, client, scope, expires_in, instance_name, instance_description)
           self.access_token = access_token.token
           self.granted_at = Time.now.to_i
           self.class.collection.update({ :_id=>code, :access_token=>nil, :revoked=>nil }, { :$set=>{ :granted_at=>granted_at, :access_token=>access_token.token } }, :safe=>true)
