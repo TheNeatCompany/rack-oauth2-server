@@ -276,6 +276,7 @@ module Rack
             return response
 
           else
+            instance_name, instance_description = get_client_instance_details(request)
 
             # 3.  Obtaining End-User Authorization
             begin
@@ -295,7 +296,7 @@ module Rack
             raise InvalidScopeError unless (requested_scope - allowed_scope).empty?
             # Create object to track authorization request and let application
             # handle the rest.
-            auth_request = AuthRequest.create(client, requested_scope, redirect_uri.to_s, response_type, state)
+            auth_request = AuthRequest.create(client, requested_scope, redirect_uri.to_s, response_type, state, instance_name, instance_description)
             uri = URI.parse(request.url)
             uri.query = "authorization=#{auth_request.id.to_s}"
             return redirect_to(uri, 303)
@@ -320,11 +321,10 @@ module Rack
         status, headers, body = response
         auth_request = self.class.get_auth_request(headers["oauth.authorization"])
         redirect_uri = URI.parse(auth_request.redirect_uri)
-        instance_name, instance_desc = get_client_instance_details(request)
         if status == 403
           auth_request.deny!
         else
-          auth_request.grant! headers["oauth.identity"], options.expires_in, instance_name, instance_desc
+          auth_request.grant! headers["oauth.identity"], options.expires_in
         end
         # 3.1.  Authorization Response
         if auth_request.response_type == "code"

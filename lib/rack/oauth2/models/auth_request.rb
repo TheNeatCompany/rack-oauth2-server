@@ -17,12 +17,13 @@ module Rack
           # Create a new authorization request. This holds state, so in addition
           # to client ID and scope, we need to know the URL to redirect back to
           # and any state value to pass back in that redirect.
-          def create(client, scope, redirect_uri, response_type, state)
+          def create(client, scope, redirect_uri, response_type, state, instance_name = 'default-client', instance_description = 'default client')
             scope = Utils.normalize_scope(scope) & client.scope # Only allowed scope
             fields = { :client_id=>client.id, :scope=>scope, :redirect_uri=>client.redirect_uri || redirect_uri,
                        :response_type=>response_type, :state=>state,
                        :grant_code=>nil, :authorized_at=>nil,
-                       :created_at=>Time.now.to_i, :revoked=>nil }
+                       :created_at=>Time.now.to_i, :revoked=>nil,
+                       :instance_name => instance_name, :instance_description => instance_description }
             fields[:_id] = collection.insert(fields)
             Server.new_instance self, fields
           end
@@ -55,19 +56,23 @@ module Rack
         attr_accessor :authorized_at
         # Timestamp if revoked.
         attr_accessor :revoked
+        # Instance name for a specific client instance
+        attr_accessor :instance_name
+        # Instance description for a specific client instance
+        attr_accessor :instance_description
 
         # Grant access to the specified identity.
-        def grant!(identity, expires_in = nil, instance_name = 'default-client', instance_description = 'default client')
+        def grant!(identity, expires_in = nil)
           raise ArgumentError, "Must supply a identity" unless identity
           return if revoked
           client = Client.find(client_id) or return
           self.authorized_at = Time.now.to_i
           if response_type == "code" # Requested authorization code
-            access_grant = AccessGrant.create(identity, client, scope, redirect_uri, nil, instance_name, instance_description)
+            access_grant = AccessGrant.create(identity, client, scope, redirect_uri, nil, self.instance_name, self.instance_description)
             self.grant_code = access_grant.code
             self.class.collection.update({ :_id=>id, :revoked=>nil }, { :$set=>{ :grant_code=>access_grant.code, :authorized_at=>authorized_at } })
           else # Requested access token
-            access_token = AccessToken.get_token_for(identity, client, scope, expires_in, instance_name, instance_description)
+            access_token = AccessToken.get_token_for(identity, client, scope, expires_in, self.instance_name, self.instance_description)
             self.access_token = access_token.token
             self.class.collection.update({ :_id=>id, :revoked=>nil, :access_token=>nil }, { :$set=>{ :access_token=>access_token.token, :authorized_at=>authorized_at } })
           end

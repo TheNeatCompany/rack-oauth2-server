@@ -19,8 +19,8 @@ module Rack
             fields = { :_id=>Server.secure_random, :identity=>identity, :scope=>scope,
                        :client_id=>client.id, :redirect_uri=>client.redirect_uri || redirect_uri,
                        :created_at=>Time.now.to_i, :expires_at=>expires_at, :granted_at=>nil,
-                       :access_token=>nil, :revoked=>nil, :instance_name => instance_name, 
-                       :instance_description => instance_description }
+                       :access_token=>nil, :revoked=>nil ,
+                       :instance_name => instance_name, :instance_description => instance_description }
             collection.insert fields
             Server.new_instance self, fields
           end

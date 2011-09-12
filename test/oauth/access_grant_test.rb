@@ -57,23 +57,35 @@ class AccessGrantTest < Test::Unit::TestCase
   end
   extend Helpers
 
-  def setup
-    super
-    # Get authorization code.
+  def default_params
     params = { :redirect_uri=>client.redirect_uri, :client_id=>client.id, :client_secret=>client.secret, :response_type=>"code",
                :scope=>"read write", :state=>"bring this back" }
+  end
+  
+  def get_auth_code(params)
     get "/oauth/authorize?" + Rack::Utils.build_query(params)
     get last_response["Location"] if last_response.status == 303
-    authorization = last_response.body[/authorization:\s*(\S+)/, 1]
+    last_response.body[/authorization:\s*(\S+)/, 1]
+  end
+
+  def get_grant_code(authorization)
     post "/oauth/grant", :authorization=>authorization
     @code = Rack::Utils.parse_query(URI.parse(last_response["Location"]).query)["code"]
   end
 
-  def request_none(scope = nil)
+  def setup
+    super
+    # Get authorization code.
+    auth_code = get_auth_code(default_params)
+    get_grant_code(auth_code)
+  end
+
+  def request_none(scope = nil, overriding_params = {})
     basic_authorize client.id, client.secret
     # Note: This grant_type becomes "client_credentials" in version 11 of the OAuth 2.0 spec
     params = { :grant_type=>"none", :scope=>"read write" }
     params[:scope] = scope if scope
+    params.merge!(overriding_params)
     post "/oauth/access_token", params
   end
 
@@ -84,18 +96,18 @@ class AccessGrantTest < Test::Unit::TestCase
     post "/oauth/access_token", params
   end
 
-  def request_with_username_password(username, password, scope = nil)
+  def request_with_username_password(username, password, scope = nil, overriding_params = {})
     basic_authorize client.id, client.secret
     params = { :grant_type=>"password" }
     params[:scope] = scope if scope
     params[:username] = username if username
     params[:password] = password if password
+    params.merge!(overriding_params)
     post "/oauth/access_token", params
   end
 
 
   # 4.  Obtaining an Access Token
-  
   context "GET request" do
     setup { get "/oauth/access_token" }
 
@@ -272,5 +284,72 @@ class AccessGrantTest < Test::Unit::TestCase
     setup { request_with_username_password "cowbell", "more", "read" }
     should_respond_with_access_token "read"
   end
-  
+
+  context "different client instances" do
+    context  "using none" do
+      should "respond with same tokens for same client instances" do
+        tokens = []
+        params =  {:instance_name => "apollo-1", :instance_descrtiption => "apollo one"}
+        2.times do |index|
+          request_none(nil, params)
+          tokens << JSON.parse(last_response.body)["access_token"]
+        end
+        assert_equal tokens.first, tokens.last
+      end
+
+      should "respond with different tokens for different client instances" do
+        request_none(nil, {:instance_name => "apollo-1", :instance_descrtiption => "apollo one"})
+        token_1 = JSON.parse(last_response.body)["access_token"]
+        request_none(nil, {:instance_name => "apollo-2", :instance_descrtiption => "apollo two"})
+        token_2 = JSON.parse(last_response.body)["access_token"]
+        assert_not_equal token_1, token_2
+      end
+    end
+
+    context "using authorization code" do
+      should "respond with same tokens for same client instances" do
+        tokens = []
+        params =  {:instance_name => "apollo-1", :instance_description => "apollo one"}
+        2.times do |index|
+          auth_code = get_auth_code(default_params.merge(params))
+          get_grant_code(auth_code)
+          request_access_token 
+          tokens << JSON.parse(last_response.body)["access_token"]
+        end
+        assert_equal tokens.first, tokens.last
+      end
+
+      should "respond with different tokens for different client instances" do
+        auth_code = get_auth_code(default_params.merge({:instance_name => "a-1", :instance_description => "a one"}))
+        get_grant_code(auth_code)
+        request_access_token 
+        token_1 = JSON.parse(last_response.body)["access_token"]
+        auth_code = get_auth_code(default_params.merge({:instance_name => "a-2", :instance_description => "a two"}))
+        get_grant_code(auth_code)
+        request_access_token 
+        token_2 = JSON.parse(last_response.body)["access_token"]
+        assert_not_equal token_1, token_2
+      end
+    end   
+
+    context "using username/password" do
+      should "respond with same tokens for same client instances" do
+        tokens = []
+        params =  {:instance_name => "apollo-1", :instance_descrtiption => "apollo one"}
+        2.times do |index|
+          request_with_username_password "cowbell", "more", "read", params
+          tokens << JSON.parse(last_response.body)["access_token"]
+        end
+        assert_equal tokens.first, tokens.last
+      end
+
+      should "respond with different tokens for different client instances" do
+        request_with_username_password "cowbell", "more", "read", {:instance_name => "apollo-1", :instance_descrtiption => "apollo one"}
+        token_1 = JSON.parse(last_response.body)["access_token"]
+        request_with_username_password "cowbell", "more", "read", {:instance_name => "apollo-2", :instance_descrtiption => "apollo two"}
+        token_2 = JSON.parse(last_response.body)["access_token"]
+        assert_not_equal token_1, token_2
+      end
+    end
+  end
 end

@@ -41,19 +41,30 @@ class AccessTokenTest < Test::Unit::TestCase
 
   def setup
     super
+    code = fetch_auth_code(default_params)
+    # Get access token
+    @token = fetch_token({:code => code})
+    header "Authorization", nil
+  end
+
+  def default_params
+    { :redirect_uri=>client.redirect_uri, :client_id=>client.id, :client_secret=>client.secret, :response_type=>"code",
+      :scope=>"read write", :state=>"bring this back" }
+  end
+  
+  def fetch_auth_code(params)
     # Get authorization code.
-    params = { :redirect_uri=>client.redirect_uri, :client_id=>client.id, :client_secret=>client.secret, :response_type=>"code",
-               :scope=>"read write", :state=>"bring this back" }
     get "/oauth/authorize?" + Rack::Utils.build_query(params)
     get last_response["Location"] if last_response.status == 303
     authorization = last_response.body[/authorization:\s*(\S+)/, 1]
     post "/oauth/grant", :authorization=>authorization
-    code = Rack::Utils.parse_query(URI.parse(last_response["Location"]).query)["code"]
-    # Get access token
+    Rack::Utils.parse_query(URI.parse(last_response["Location"]).query)["code"]
+  end
+
+  def fetch_token(params = {})
     basic_authorize client.id, client.secret
-    post "/oauth/access_token", :scope=>"read write", :grant_type=>"authorization_code", :code=>code, :redirect_uri=>client.redirect_uri
-    @token = JSON.parse(last_response.body)["access_token"]
-    header "Authorization", nil
+    post "/oauth/access_token", {:scope=>"read write", :grant_type=>"authorization_code", :redirect_uri=>client.redirect_uri}.merge(params)
+    JSON.parse(last_response.body)["access_token"]
   end
 
   def with_token(token = @token)
@@ -68,7 +79,6 @@ class AccessTokenTest < Test::Unit::TestCase
     expire
     header "Authorization", "OAuth #{@token}"
   end
-
 
   # 5.  Accessing a Protected Resource
 
@@ -136,9 +146,8 @@ class AccessTokenTest < Test::Unit::TestCase
         should_fail_authentication :invalid_token
       end
     end
-
-    # 5.1.2.  URI Query Parameter
     
+    # 5.1.2.  URI Query Parameter
     context "query parameter" do
       context "default mode" do
         setup { get "/private?oauth_token=#{@token}" }
@@ -336,5 +345,32 @@ class AccessTokenTest < Test::Unit::TestCase
     end
 
     teardown { config.path = nil }
+  end
+
+
+
+  context "for specific client instances" do
+
+    should "default client instance" do
+      default_tokens = []
+      params = default_params
+      2.times { default_tokens << fetch_token({:code => fetch_auth_code(default_params)})}
+      assert_equal default_tokens.first, default_tokens.last
+    end
+
+    should "same client instance" do
+      tokens = []
+      params = default_params.merge({:instance_name => "pearl-harbor", :instance_description => "peral harbour description"})
+      2.times { tokens << fetch_token({:code => fetch_auth_code(params)})}
+      assert_equal tokens.first, tokens.last
+    end
+
+    should "different client instances" do
+      tokens = []
+      params = default_params
+      token_for_client_1 = fetch_token({:code => fetch_auth_code(params.merge({:instance_name => "apollo-1", :instance_description => "apollo 1 description"}))}) 
+      token_for_client_2 = fetch_token({:code => fetch_auth_code(params.merge({:instance_name => "apollo-2", :instance_description => "apollo 2 description"}))}) 
+      assert_not_equal token_for_client_1, token_for_client_2 
+    end
   end
 end
