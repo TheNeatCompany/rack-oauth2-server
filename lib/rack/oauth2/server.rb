@@ -81,10 +81,12 @@ module Rack
         # @param [Array, nil] scope Array of string, nil if you want 'em all
         # @param [Integer, nil] expires_in How many seconds before access grant
         # expires (default to 5 minutes)
+        # instance_name [String] name of the client instance (defaults to default-client)
+        # instance_description [String] description of the client instance (defaults to 'default client')
         # @return [String] Access grant authorization code
-        def access_grant(identity, client_id, scope = nil, expires_in = nil)
+        def access_grant(identity, client_id, scope = nil, expires_in = nil, instance_name = 'default-client', instance_description = 'default client')
           client = get_client(client_id) or fail "No such client"
-          AccessGrant.create(identity, client, scope || client.scope, nil, expires_in).code
+          AccessGrant.create(identity, client, scope || client.scope, nil, expires_in, instance_name, instance_description).code
         end
 
         # Returns AccessToken from token.
@@ -104,10 +106,12 @@ module Rack
         # @param [Array, nil] scope Array of names, nil if you want 'em all
         # @param [Integer, nil] expires How many seconds before access token
         # expires, defaults to never. If zero or nil, token never expires.
+        # instance_name [String] name of the client instance (defaults to default-client)
+        # instance_description [String] description of the client instance (defaults to 'default client')
         # @return [String] Access token
-        def token_for(identity, client_id, scope = nil, expires_in = nil)
+        def token_for(identity, client_id, scope = nil, expires_in = nil, instance_name = 'default-client', instance_description = 'default client')
           client = get_client(client_id) or fail "No such client"
-          AccessToken.get_token_for(identity, client, scope || client.scope, expires_in).token
+          AccessToken.get_token_for(identity, client, scope || client.scope, expires_in, instance_name, instance_description).token
         end
 
         # Returns all AccessTokens for an identity.
@@ -239,7 +243,7 @@ module Rack
           elsif response[1] && response[1]["oauth.authorization"]
             # 3.  Obtaining End-User Authorization
             # Flow ends here.
-            return authorization_response(response, logger)
+            return authorization_response(request, response, logger)
           else
             return response
           end
@@ -272,6 +276,7 @@ module Rack
             return response
 
           else
+            instance_name, instance_description = get_client_instance_details(request)
 
             # 3.  Obtaining End-User Authorization
             begin
@@ -291,7 +296,7 @@ module Rack
             raise InvalidScopeError unless (requested_scope - allowed_scope).empty?
             # Create object to track authorization request and let application
             # handle the rest.
-            auth_request = AuthRequest.create(client, requested_scope, redirect_uri.to_s, response_type, state)
+            auth_request = AuthRequest.create(client, requested_scope, redirect_uri.to_s, response_type, state, instance_name, instance_description)
             uri = URI.parse(request.url)
             uri.query = "authorization=#{auth_request.id.to_s}"
             return redirect_to(uri, 303)
@@ -312,7 +317,7 @@ module Rack
       # Get here on completion of the authorization. Authorization response in
       # oauth.response either grants or denies authroization. In either case, we
       # redirect back with the proper response.
-      def authorization_response(response, logger)
+      def authorization_response(request, response, logger)
         status, headers, body = response
         auth_request = self.class.get_auth_request(headers["oauth.authorization"])
         redirect_uri = URI.parse(auth_request.redirect_uri)
@@ -351,11 +356,12 @@ module Rack
         # 4.2.  Access Token Response
         begin
           client = get_client(request)
+          instance_name, instance_desc = get_client_instance_details(request)
           case request.POST["grant_type"]
           when "none"
             # 4.1 "none" access grant type (i.e. two-legged OAuth flow)
             requested_scope = request.POST["scope"] ? Utils.normalize_scope(request.POST["scope"]) : client.scope
-            access_token = AccessToken.get_token_for(client.id.to_s, client, requested_scope, options.expires_in)
+            access_token = AccessToken.get_token_for(client.id.to_s, client, requested_scope, options.expires_in, instance_name, instance_desc)
           when "authorization_code"
             # 4.1.1.  Authorization Code
             grant = AccessGrant.from_code(request.POST["code"])
@@ -377,11 +383,11 @@ module Rack
             args << client.id << requested_scope unless options.authenticator.arity == 2
             identity = options.authenticator.call(*args)
             raise InvalidGrantError, "Username/password do not match" unless identity
-            access_token = AccessToken.get_token_for(identity, client, requested_scope, options.expires_in)
+            access_token = AccessToken.get_token_for(identity, client, requested_scope, options.expires_in, instance_name, instance_desc)
           else
             raise UnsupportedGrantType
           end
-          logger.info "RO2S: Access token #{access_token.token} granted to client #{client.display_name}, identity #{access_token.identity}" if logger
+          logger.info "RO2S: Access token #{access_token.token} granted to client #{client.display_name}, identity #{access_token.identity}, client instance: #{access_token.instance_name}" if logger
           response = { :access_token=>access_token.token }
           response[:scope] = access_token.scope.join(" ")
           return [200, { "Content-Type"=>"application/json", "Cache-Control"=>"no-store" }, [response.to_json]]
@@ -414,6 +420,18 @@ module Rack
         return client
       rescue BSON::InvalidObjectId
         raise InvalidClientError
+      end
+
+      def get_client_instance_details(request)
+        instance_name = instance_description = nil
+        if request.post?
+          instance_name, instance_description = request.POST.values_at("instance_name", "instance_description")
+        else
+          instance_name, instance_description = request.GET.values_at("instance_name", "instance_description")
+        end
+        instance_name ||= 'default-client'
+        instance_description ||= 'default client'
+        [instance_name, instance_description]
       end
 
       # Rack redirect response.
