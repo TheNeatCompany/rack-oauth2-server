@@ -146,6 +146,9 @@ module Rack
       #   Defaults to use the request host name.
       # - :logger -- The logger to use. Under Rails, defaults to use the Rails
       #   logger.  Will use Rack::Logger if available.
+      # - :authorizer -- A block that
+      #   receives the identity string (e.g. user ID) and request and returns true
+      #   if a token should be granted to specified user
       #
       # Authenticator is a block that receives either two or four parameters.
       # The first two are username and password. The other two are the client
@@ -157,7 +160,7 @@ module Rack
       #   end
       Options = Struct.new(:access_token_path, :authenticator, :authorization_types,
         :authorize_path, :database, :host, :param_authentication, :path, :realm, 
-        :expires_in,:logger)
+        :expires_in, :logger, :authorizer)
 
       # Global options. This is what we set during configuration (e.g. Rails'
       # config/application), and options all handlers inherit by default.
@@ -383,6 +386,10 @@ module Rack
             args << client.id << requested_scope unless options.authenticator.arity == 2
             identity = options.authenticator.call(*args)
             raise InvalidGrantError, "Username/password do not match" unless identity
+            if options.authorizer
+              authorized = options.authorizer.call(identity, request)
+              raise PaymentRequiredError unless authorized
+            end
             access_token = AccessToken.get_token_for(identity, client, requested_scope, options.expires_in, instance_name, instance_desc)
           else
             raise UnsupportedGrantType
@@ -392,6 +399,9 @@ module Rack
           response[:scope] = access_token.scope.join(" ")
           return [200, { "Content-Type"=>"application/json", "Cache-Control"=>"no-store" }, [response.to_json]]
           # 4.3.  Error Response
+        rescue PaymentRequiredError => error
+          return [402, { "Content-Type"=>"application/json", "Cache-Control"=>"no-store" }, 
+                  [{ :error=>error.code, :error_description=>error.message }.to_json]]
         rescue OAuthError=>error
           logger.error "RO2S: Access token request error #{error.code}: #{error.message}" if logger
           return unauthorized(request, error) if InvalidClientError === error && request.basic?

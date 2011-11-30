@@ -15,6 +15,18 @@ class ServerTest < Test::Unit::TestCase
     should "set oauth.host" do
       assert_equal "example.org", Server.options.host
     end
+    
+    should "set authenticator block" do
+      proc = Server.options.authenticator
+      assert_not_nil proc
+      assert proc.lambda?
+    end
+    
+    should "set authorizer block" do
+      proc = Server.options.authorizer
+      assert_not_nil proc
+      assert proc.lambda?
+    end
   end
 
   context "get_auth_request" do

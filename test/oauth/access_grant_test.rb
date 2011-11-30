@@ -31,6 +31,12 @@ class AccessGrantTest < Test::Unit::TestCase
         assert_match " error=\"#{error}\"", last_response["WWW-Authenticate"]
       end
     end
+    
+    def should_respond_with_payment_required_error
+      should "respond with status 402 (Payment Required)" do
+        assert_equal 402, last_response.status
+      end
+    end
 
     def should_respond_with_access_token(scope = "read write")
       should "respond with status 200" do
@@ -105,8 +111,7 @@ class AccessGrantTest < Test::Unit::TestCase
     params.merge!(overriding_params)
     post "/oauth/access_token", params
   end
-
-
+  
   # 4.  Obtaining an Access Token
   context "GET request" do
     setup { get "/oauth/access_token" }
@@ -243,6 +248,19 @@ class AccessGrantTest < Test::Unit::TestCase
   context "unsupported scope" do
     setup { request_with_username_password "cowbell", "more", "read write math" }
     should_return_error :invalid_scope
+  end
+  
+  context "authorizer returning false" do
+    setup do
+      @old = config.authorizer
+      config.authorizer = lambda do |identity, request|
+        false
+      end
+      request_with_username_password "cowbell", "more", "read"
+    end
+
+    should_respond_with_payment_required_error
+    teardown { config.authorizer = @old }
   end
 
   context "authenticator with 4 parameters" do

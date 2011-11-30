@@ -17,7 +17,14 @@ module Rack
       # The end-user or authorization server denied the request.
       class AccessDeniedError < OAuthError
         def initialize
-          super :access_denied, "You are now allowed to access this resource."
+          super :access_denied, "You are not allowed to access this resource."
+        end
+      end
+      
+      # Cannot issue an access token because the user has not purchased the required service
+      class PaymentRequiredError < OAuthError
+        def initialize
+          super :payment_required, "You must purchase a subscription to access this."
         end
       end
 

@@ -9,6 +9,9 @@ class MyApp < Sinatra::Base
   oauth.authenticator = lambda do |username, password|
     "Batman" if username == "cowbell" && password == "more"
   end
+  oauth.authorizer = lambda do |identity, request|
+    true
+  end
   oauth.host = "example.org"
   oauth.database = DATABASE
 
