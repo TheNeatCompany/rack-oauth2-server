@@ -24,7 +24,7 @@ module Rack
       # Cannot issue an access token because the user has not purchased the required service
       class PaymentRequiredError < OAuthError
         def initialize
-          super :payment_required, "You must purchase a subscription to access this."
+          super :payment_required, "Mobile access is not included with your current NeatCloud plan. Please upgrade."
         end
       end
 
