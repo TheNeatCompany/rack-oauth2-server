@@ -159,7 +159,7 @@ module Rack
       #     user if user && user.authenticated?(password)
       #   end
       Options = Struct.new(:access_token_path, :authenticator, :authorization_types,
-        :authorize_path, :database, :host, :param_authentication, :path, :realm, 
+        :authorize_path, :database, :host, :param_authentication, :path, :realm,
         :expires_in, :logger, :authorizer)
 
       # Global options. This is what we set during configuration (e.g. Rails'
@@ -388,7 +388,7 @@ module Rack
             raise InvalidGrantError, "Username/password do not match" unless identity
             if options.authorizer
               authorized = options.authorizer.call(identity, request)
-              raise PaymentRequiredError unless authorized
+              raise AccessDeniedError unless authorized
             end
             access_token = AccessToken.get_token_for(identity, client, requested_scope, options.expires_in, instance_name, instance_desc)
           else
@@ -399,13 +399,13 @@ module Rack
           response[:scope] = access_token.scope.join(" ")
           return [200, { "Content-Type"=>"application/json", "Cache-Control"=>"no-store" }, [response.to_json]]
           # 4.3.  Error Response
-        rescue PaymentRequiredError => error
-          return [402, { "Content-Type"=>"application/json", "Cache-Control"=>"no-store" }, 
+        rescue AccessDeniedError => error
+          return [401, { "Content-Type"=>"application/json", "Cache-Control"=>"no-store" },
                   [{ :error=>error.code, :error_description=>error.message }.to_json]]
         rescue OAuthError=>error
           logger.error "RO2S: Access token request error #{error.code}: #{error.message}" if logger
           return unauthorized(request, error) if InvalidClientError === error && request.basic?
-          return [400, { "Content-Type"=>"application/json", "Cache-Control"=>"no-store" }, 
+          return [400, { "Content-Type"=>"application/json", "Cache-Control"=>"no-store" },
                   [{ :error=>error.code, :error_description=>error.message }.to_json]]
         end
       end
