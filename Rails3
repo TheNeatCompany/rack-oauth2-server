@@ -3,6 +3,6 @@ gemspec
 gem "awesome_print"
 gem "json"
 gem "rack-test"
-gem "rails", "~>3.0"
+gem "rails", "~>3.2"
 gem "shoulda"
 gem "timecop"
