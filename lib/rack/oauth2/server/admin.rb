@@ -78,7 +78,7 @@ module Rack
         set :logger, ::Rails.logger if defined?(::Rails)
         # Number of tokens to return in each page.
         set :tokens_per_page, 100
-        set :public, ::File.dirname(__FILE__) + "/../admin"
+        set :public_folder, ::File.dirname(__FILE__) + "/../admin"
         set :method_override, true
         mime_type :js, "text/javascript"
         mime_type :tmpl, "text/x-jquery-template"

@@ -11,7 +11,7 @@ module Rack
 
           # Find AccessToken from token. Does not return revoked tokens.
           def from_token(token)
-            Server.new_instance self, collection.find_one({ :_id=>token, :revoked=>nil })
+            Server.new_instance self, collection.where( :_id=>token, :revoked=>nil ).first
           end
 
           # Get an access token (create new one if necessary).
@@ -21,7 +21,7 @@ module Rack
           def get_token_for(identity, client, scope, expires = nil, instance_name = "default-client", instance_description = "default client")
             raise ArgumentError, "Identity must be String or Integer" unless String === identity || Integer === identity
             scope = Utils.normalize_scope(scope) & client.scope # Only allowed scope
-            unless token = collection.find_one({ :identity=>identity, :scope=>scope, :client_id=>client.id, :instance_name => instance_name, :revoked=>nil })
+            unless token = collection.where({ :identity=>identity, :scope=>scope, :client_id=>client.id, :instance_name => instance_name, :revoked=>nil }).first
               expires_at = Time.now.to_i + expires if expires && expires != 0
               token = { :_id=>Server.secure_random, :identity=>identity, :scope=>scope,
                         :client_id=>client.id, :created_at=>Time.now.to_i,

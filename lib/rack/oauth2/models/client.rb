@@ -9,8 +9,8 @@ module Rack
           # Find Client from client identifier.
           def find(client_id)
             id = Moped::BSON::ObjectId(client_id.to_s)
-            Server.new_instance self, collection.find_one(id)
-          rescue BSON::InvalidObjectId
+            Server.new_instance self, collection.where(id).first
+          rescue Moped::Errors::InvalidObjectId
           end
 
           # Create a new client. Client provides the following properties:
@@ -45,9 +45,9 @@ module Rack
           # Lookup client by ID, display name or URL.
           def lookup(field)
             id = Moped::BSON::ObjectId(field.to_s)
-            Server.new_instance self, collection.find_one(id)
+            Server.new_instance self, collection.where(id).first
           rescue BSON::InvalidObjectId
-            Server.new_instance self, collection.find_one({ :display_name=>field }) || collection.find_one({ :link=>field })
+            Server.new_instance self, collection.where({ :display_name=>field }).first || collection.where({ :link=>field }).first
           end
 
           # Returns all the clients in the database, sorted alphabetically.

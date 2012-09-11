@@ -9,7 +9,7 @@ if (i = ARGV.index("--db")) && ARGV[i+1]
   url = ARGV[i + 1]
   uri = URI.parse(url)
   uri = URI.parse("mongo://#{url}") if uri.opaque
-  db = Mongo::Connection.new(uri.host, uri.port)[uri.path.sub(/^\//, "")]
+  db = Moped::Session.new(uri.host, uri.port)[uri.path.sub(/^\//, "")]
   db.authenticate uri.user, uri.password if uri.user
   Server.options.database = db
   ARGV[i,2] = []
@@ -169,17 +169,17 @@ when "migrate"
   print ": "
   scope = $stdin.gets.strip.split
   puts "Updating Client scope to #{scope.join(", ")}"
-  Server::Client.collection.find({ :scope=>{ :$exists=>false } }, :fields=>[]).each do |client|
+  Server::Client.collection.where( :scope=>{ :$exists=>false } , :fields=>[]).each do |client|
     update = { :scope=>scope,
       :tokens_granted=>Server::AccessToken.count(:client_id=>client["_id"]),
       :tokens_revoked=>Server::AccessToken.count(:client_id=>client["_id"], :revoked=>true) }
-    Server::Client.collection.update({ :_id=>client["_id"] }, { :$set=>update })
+    Server::Client.collection.update( :_id=>client["_id"] , { :$set=>update })
   end
   [Server::AccessToken, Server::AccessGrant, Server::AuthRequest].each do |mod|
     puts "Updating #{mod.name} scope from string to array"
-    mod.collection.find({ :scope=>{ :$type=>2 } }, :fields=>[]).each do |token|
+    mod.collection.where( :scope=>{ :$type=>2 } , :fields=>[]).each do |token|
       scope = token["scope"].split
-      mod.collection.update({ :_id=>token["_id"] }, { :$set=>{ :scope=>scope } })
+      mod.collection.update( :_id=>token["_id"] , { :$set=>{ :scope=>scope } })
     end
   end
 else

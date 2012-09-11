@@ -10,7 +10,7 @@ module Rack
           # Find AuthRequest from identifier.
           def find(request_id)
             id = Moped::BSON::ObjectId(request_id.to_s)
-            Server.new_instance self, collection.find_one(id)
+            Server.new_instance self, collection.where(id).first
           rescue BSON::InvalidObjectId
           end
 
