@@ -1,6 +1,8 @@
 source :rubygems
 gemspec
 
+gem 'moped'
+
 group :development do
   gem "rake"
   gem "thin"
@@ -12,5 +14,5 @@ group :test do
   gem "json"
   gem "rack-test"
   gem "shoulda"
-  gem "timecop"
+  gem "timecop", :git => 'git://github.com/jtrupiano/timecop.git', :ref => 'b8e3d00bd9'
 end
