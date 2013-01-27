@@ -11,7 +11,7 @@ module Rack
 
           # Find AccessToken from token. Does not return revoked tokens.
           def from_token(token)
-            Server.new_instance self, collection.find_one({ :_id=>token, :revoked=>nil })
+            Server.new_instance self, collection_on_secondary.find_one({ :_id=>token, :revoked=>nil })
           end
 
           # Get an access token (create new one if necessary).
@@ -21,7 +21,7 @@ module Rack
           def get_token_for(identity, client, scope, expires = nil, instance_name = "default-client", instance_description = "default client")
             raise ArgumentError, "Identity must be String or Integer" unless String === identity || Integer === identity
             scope = Utils.normalize_scope(scope) & client.scope # Only allowed scope
-            unless token = collection.find_one({ :identity=>identity, :scope=>scope, :client_id=>client.id, :instance_name => instance_name, :revoked=>nil })
+            unless token = collection_on_secondary.find_one({ :identity=>identity, :scope=>scope, :client_id=>client.id, :instance_name => instance_name, :revoked=>nil })
               expires_at = Time.now.to_i + expires if expires && expires != 0
               token = { :_id=>Server.secure_random, :identity=>identity, :scope=>scope,
                         :client_id=>client.id, :created_at=>Time.now.to_i,
@@ -35,50 +35,23 @@ module Rack
 
           # Find all AccessTokens for an identity.
           def from_identity(identity)
-            collection.find({ :identity=>identity }).map { |fields| Server.new_instance self, fields }
+            collection_on_secondary.find({ :identity=>identity }).map { |fields| Server.new_instance self, fields }
           end
 
           # Returns all access tokens for a given client, Use limit and offset
           # to return a subset of tokens, sorted by creation date.
           def for_client(client_id, offset = 0, limit = 100)
             client_id = BSON::ObjectId(client_id.to_s)
-            collection.find({ :client_id=>client_id }, { :sort=>[[:created_at, Mongo::ASCENDING]], :skip=>offset, :limit=>limit }).
+            collection_on_secondary.find({ :client_id=>client_id }, { :sort=>[[:created_at, Mongo::ASCENDING]], :skip=>offset, :limit=>limit }).
               map { |token| Server.new_instance self, token }
-          end
-
-          # Returns count of access tokens.
-          #
-          # @param [Hash] filter Count only a subset of access tokens
-          # @option filter [Integer] days Only count that many days (since now)
-          # @option filter [Boolean] revoked Only count revoked (true) or non-revoked (false) tokens; count all tokens if nil
-          # @option filter [String, ObjectId] client_id Only tokens grant to this client
-          def count(filter = {})
-            select = {}
-            if filter[:days]
-              now = Time.now.to_i
-              range = { :$gt=>now - filter[:days] * 86400, :$lte=>now }
-              select[ filter[:revoked] ? :revoked : :created_at ] = range
-            elsif filter.has_key?(:revoked)
-              select[:revoked] = filter[:revoked] ? { :$ne=>nil } : { :$eq=>nil }
-            end
-            select[:client_id] = BSON::ObjectId(filter[:client_id].to_s) if filter[:client_id]
-            collection.find(select).count
-          end
-
-          def historical(filter = {})
-            days = filter[:days] || 60
-            select = { :$gt=> { :created_at=>Time.now - 86400 * days } }
-            select = {}
-            if filter[:client_id]
-              select[:client_id] = BSON::ObjectId(filter[:client_id].to_s)
-            end
-            raw = Server::AccessToken.collection.group("function (token) { return { ts: Math.floor(token.created_at / 86400) } }",
-              select, { :granted=>0 }, "function (token, state) { state.granted++ }")
-            raw.sort { |a, b| a["ts"] - b["ts"] }
           end
 
           def collection
             Server.database["oauth2.access_tokens"]
+          end
+
+          def collection_on_secondary
+            Server.secondary_database["oauth2.access_tokens"]
           end
         end
 
@@ -105,15 +78,6 @@ module Rack
         attr_accessor :instance_name
         # Instance description for a specific client instance
         attr_accessor :instance_description
-
-        # Updates the last access timestamp.
-        def access!
-          today = (Time.now.to_i / 3600) * 3600
-          if last_access.nil? || last_access < today
-            AccessToken.collection.update({ :_id=>token }, { :$set=>{ :last_access=>today, :prev_access=>last_access } })
-            self.last_access = today
-          end
-        end
 
         # Revokes this access token.
         def revoke!

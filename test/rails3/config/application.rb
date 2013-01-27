@@ -3,7 +3,7 @@ module MyApp
   class Application < Rails::Application
     config.session_store :cookie_store, :key=>"_my_app_session"
     config.secret_token = "Stay hungry. Stay foolish. -- Steve Jobs"
-    config.active_support.deprecation = :stderr 
+    config.active_support.deprecation = :stderr
 
     config.after_initialize do
       config.oauth.database = DATABASE
@@ -11,7 +11,10 @@ module MyApp
       config.oauth.authenticator = lambda do |username, password|
         "Batman" if username == "cowbell" && password == "more"
       end
-      config.middleware.use Rack::OAuth2::Server::Admin.mount
+      config.oauth.expires_in = 86400 # a day
+      config.oauth.authorizer = lambda do |identity, request|
+        true
+      end
     end
   end
 end

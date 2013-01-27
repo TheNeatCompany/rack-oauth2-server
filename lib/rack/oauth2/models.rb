@@ -22,7 +22,7 @@ module Rack
         def secure_random
           OpenSSL::Random.random_bytes(32).unpack("H*")[0]
         end
-        
+
         # @private
         def create_indexes(&block)
           if block
@@ -35,7 +35,7 @@ module Rack
             @create_indexes = nil
           end
         end
- 
+
         # A Mongo::DB object.
         def database
           @database ||= Server.options.database
@@ -43,8 +43,21 @@ module Rack
           raise "You set Server.database to #{Server.database.class}, should be a Mongo::DB object" unless Mongo::DB === @database
           @database
         end
+
+        def secondary_database
+          @secondary_database ||= secondary_from_primary(database)
+        end
+
+        def secondary_from_primary db
+          if db.connection.is_a?(Mongo::ReplSetConnection)
+            logger.info "[Rack::OAuth2::Server#secondary_from_primary] - attempting to read from secondary"
+            Mongo::DB.new(db.name, Mongo::ReplSetConnection.new([db.connection.host], :read => :secondary))
+          else
+            db
+          end
+        end
       end
- 
+
     end
   end
 end
