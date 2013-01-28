@@ -50,7 +50,7 @@ module Rack
 
         def secondary_from_primary db
           if db.connection.is_a?(Mongo::ReplSetConnection)
-            logger.info "[Rack::OAuth2::Server#secondary_from_primary] - attempting to read from secondary"
+            puts "[Rack::OAuth2::Server#secondary_from_primary] - attempting to read from secondary"
             Mongo::DB.new(db.name, Mongo::ReplSetConnection.new([db.connection.host], :read => :secondary))
           else
             db
