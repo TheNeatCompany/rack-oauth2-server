@@ -5,6 +5,7 @@ group :development do
   gem "rake"
   gem "thin"
   gem "yard"
+  gem "neat_database", :path => "/Users/bcicutti/git/Neat/neat-database"
 end
 
 group :test do
