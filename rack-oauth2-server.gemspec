@@ -23,5 +23,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "mongo", "~> 1.5.2"
   spec.add_dependency "bson_ext"
   spec.add_dependency "sinatra", "~>1.1"
-  spec.add_dependency "neat-database"
+  spec.add_dependency "neat-database", :git => 'git@github.com:TheNeatCompany/neat-database.git'
 end
