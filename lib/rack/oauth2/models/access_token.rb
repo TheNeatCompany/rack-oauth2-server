@@ -11,7 +11,7 @@ module Rack
 
           # Find AccessToken from token. Does not return revoked tokens.
           def from_token(token)
-            Server.new_instance self, collection_on_secondary.find_one({ :_id=>token, :revoked=>nil })
+            Server.new_instance self, collection_on_secondary { |db| db["oauth2.access_tokens"].find_one({ :_id=>token, :revoked=>nil }) }
           end
 
           # Get an access token (create new one if necessary).
@@ -21,7 +21,7 @@ module Rack
           def get_token_for(identity, client, scope, expires = nil, instance_name = "default-client", instance_description = "default client")
             raise ArgumentError, "Identity must be String or Integer" unless String === identity || Integer === identity
             scope = Utils.normalize_scope(scope) & client.scope # Only allowed scope
-            unless token = collection_on_secondary.find_one({ :identity=>identity, :scope=>scope, :client_id=>client.id, :instance_name => instance_name, :revoked=>nil })
+            unless token = collection_on_secondary { |db| db["oauth2.access_tokens"].find_one({ :identity=>identity, :scope=>scope, :client_id=>client.id, :instance_name => instance_name, :revoked=>nil }) }
               expires_at = Time.now.to_i + expires if expires && expires != 0
               token = { :_id=>Server.secure_random, :identity=>identity, :scope=>scope,
                         :client_id=>client.id, :created_at=>Time.now.to_i,
@@ -35,15 +35,18 @@ module Rack
 
           # Find all AccessTokens for an identity.
           def from_identity(identity)
-            collection_on_secondary.find({ :identity=>identity }).map { |fields| Server.new_instance self, fields }
+            (collection_on_secondary do |db| 
+              db["oauth2.access_tokens"].find({ :identity=>identity })
+            end).map { |fields| Server.new_instance self, fields }
           end
 
           # Returns all access tokens for a given client, Use limit and offset
           # to return a subset of tokens, sorted by creation date.
           def for_client(client_id, offset = 0, limit = 100)
             client_id = BSON::ObjectId(client_id.to_s)
-            collection_on_secondary.find({ :client_id=>client_id }, { :sort=>[[:created_at, Mongo::ASCENDING]], :skip=>offset, :limit=>limit }).
-              map { |token| Server.new_instance self, token }
+            (collection_on_secondary do |db| 
+              db["oauth2.access_tokens"].find({ :client_id=>client_id }, { :sort=>[[:created_at, Mongo::ASCENDING]], :skip=>offset, :limit=>limit })
+            end).map { |token| Server.new_instance self, token }
           end
 
           def collection
@@ -51,7 +54,7 @@ module Rack
           end
 
           def collection_on_secondary
-            Server.secondary_database["oauth2.access_tokens"]
+            NeatDatabase.mongo_connect(Server.options.database.connection.host, Server.options.database.name, &Proc.new)
           end
         end
 
