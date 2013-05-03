@@ -20,6 +20,13 @@ module Rack
           super :access_denied, "You are not allowed to access this resource."
         end
       end
+      
+      # Cannot issue an access token because the user has not purchased the required service
+      class PaymentRequiredError < OAuthError
+        def initialize
+          super :payment_required, "Mobile access is not included with your current NeatCloud plan. Please upgrade."
+        end
+      end
 
       # Access token expired, client expected to request new one using refresh
       # token.
@@ -37,7 +44,7 @@ module Rack
           super :invalid_client, "Client ID and client secret do not match."
         end
       end
-
+     
       # The provided access grant is invalid, expired, or revoked (e.g.  invalid
       # assertion, expired authorization token, bad end-user password credentials,
       # or mismatching authorization code and redirection URI).
