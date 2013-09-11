@@ -14,13 +14,12 @@ class MyApp < Sinatra::Base
   end
   oauth.host = "example.org"
   oauth.database = DATABASE
-  oauth.expires_in = 86400 # a day
 
 
 
   # 3.  Obtaining End-User Authorization
-
-  before "/oauth/*" do
+ 
+  before "/oauth/*" do 
     halt oauth.deny! if oauth.scope.include?("time-travel") # Only Superman can do that
   end
 
@@ -71,5 +70,5 @@ class MyApp < Sinatra::Base
   get "/list_tokens" do
     oauth.list_access_tokens("Batman").map(&:token).join(" ")
   end
-
+  
 end

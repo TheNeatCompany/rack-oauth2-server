@@ -9,7 +9,7 @@ module Rack
           # Find Client from client identifier.
           def find(client_id)
             id = BSON::ObjectId(client_id.to_s)
-            Server.new_instance self, collection_on_secondary.find_one(id)
+            Server.new_instance self, collection.find_one(id)
           rescue BSON::InvalidObjectId
           end
 
@@ -20,7 +20,7 @@ module Rack
           # # :redirect_uri -- Registered redirect URI.
           # # :scope -- List of names the client is allowed to request.
           # # :notes -- Free form text.
-          #
+          # 
           # This method does not validate any of these fields, in fact, you're
           # not required to set them, use them, or use them as suggested. Using
           # them as suggested would result in better user experience.  Don't ask
@@ -42,6 +42,14 @@ module Rack
             Server.new_instance self, fields
           end
 
+          # Lookup client by ID, display name or URL.
+          def lookup(field)
+            id = BSON::ObjectId(field.to_s)
+            Server.new_instance self, collection.find_one(id)
+          rescue BSON::InvalidObjectId
+            Server.new_instance self, collection.find_one({ :display_name=>field }) || collection.find_one({ :link=>field })
+          end
+
           # Returns all the clients in the database, sorted alphabetically.
           def all
             collection.find({}, { :sort=>[[:display_name, Mongo::ASCENDING]] }).
@@ -59,10 +67,6 @@ module Rack
 
           def collection
             Server.database["oauth2.clients"]
-          end
-
-          def collection_on_secondary
-            Server.secondary_database["oauth2.clients"]
           end
         end
 

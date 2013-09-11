@@ -25,16 +25,16 @@ class AccessGrantTest < Test::Unit::TestCase
         assert_equal "OAuth", last_response["WWW-Authenticate"].split.first
       end
       should "respond with realm" do
-        assert_match " realm=\"example.org\"", last_response["WWW-Authenticate"]
+        assert_match " realm=\"example.org\"", last_response["WWW-Authenticate"] 
       end
       should "respond with error code #{error}" do
         assert_match " error=\"#{error}\"", last_response["WWW-Authenticate"]
       end
     end
-
+    
     def should_respond_with_payment_required_error
-      should "respond with status 401 (Payment Required)" do
-        assert_equal 401, last_response.status
+      should "respond with status 402 (Payment Required)" do
+        assert_equal 402, last_response.status
       end
     end
 
@@ -67,7 +67,7 @@ class AccessGrantTest < Test::Unit::TestCase
     params = { :redirect_uri=>client.redirect_uri, :client_id=>client.id, :client_secret=>client.secret, :response_type=>"code",
                :scope=>"read write", :state=>"bring this back" }
   end
-
+  
   def get_auth_code(params)
     get "/oauth/authorize?" + Rack::Utils.build_query(params)
     get last_response["Location"] if last_response.status == 303
@@ -111,7 +111,7 @@ class AccessGrantTest < Test::Unit::TestCase
     params.merge!(overriding_params)
     post "/oauth/access_token", params
   end
-
+  
   # 4.  Obtaining an Access Token
   context "GET request" do
     setup { get "/oauth/access_token" }
@@ -165,7 +165,7 @@ class AccessGrantTest < Test::Unit::TestCase
     setup { request_access_token :code=>nil }
     should_return_error :invalid_grant
   end
-
+  
   context "unknown authorization code" do
     setup { request_access_token :code=>"unknown" }
     should_return_error :invalid_grant
@@ -223,8 +223,8 @@ class AccessGrantTest < Test::Unit::TestCase
   context "no username" do
     setup { request_with_username_password nil, "more" }
     should_return_error :invalid_grant
-  end
-
+  end  
+  
   context "no password" do
     setup { request_with_username_password nil, "more" }
     should_return_error :invalid_grant
@@ -249,7 +249,7 @@ class AccessGrantTest < Test::Unit::TestCase
     setup { request_with_username_password "cowbell", "more", "read write math" }
     should_return_error :invalid_scope
   end
-
+  
   context "authorizer returning false" do
     setup do
       @old = config.authorizer
@@ -307,7 +307,7 @@ class AccessGrantTest < Test::Unit::TestCase
     context  "using none" do
       should "respond with same tokens for same client instances" do
         tokens = []
-        params =  {:instance_name => "apollo-1", :instance_description => "apollo one"}
+        params =  {:instance_name => "apollo-1", :instance_descrtiption => "apollo one"}
         2.times do |index|
           request_none(nil, params)
           tokens << JSON.parse(last_response.body)["access_token"]
@@ -316,9 +316,9 @@ class AccessGrantTest < Test::Unit::TestCase
       end
 
       should "respond with different tokens for different client instances" do
-        request_none(nil, {:instance_name => "apollo-1", :instance_description => "apollo one"})
+        request_none(nil, {:instance_name => "apollo-1", :instance_descrtiption => "apollo one"})
         token_1 = JSON.parse(last_response.body)["access_token"]
-        request_none(nil, {:instance_name => "apollo-2", :instance_description => "apollo two"})
+        request_none(nil, {:instance_name => "apollo-2", :instance_descrtiption => "apollo two"})
         token_2 = JSON.parse(last_response.body)["access_token"]
         assert_not_equal token_1, token_2
       end
@@ -331,7 +331,7 @@ class AccessGrantTest < Test::Unit::TestCase
         2.times do |index|
           auth_code = get_auth_code(default_params.merge(params))
           get_grant_code(auth_code)
-          request_access_token
+          request_access_token 
           tokens << JSON.parse(last_response.body)["access_token"]
         end
         assert_equal tokens.first, tokens.last
@@ -340,20 +340,20 @@ class AccessGrantTest < Test::Unit::TestCase
       should "respond with different tokens for different client instances" do
         auth_code = get_auth_code(default_params.merge({:instance_name => "a-1", :instance_description => "a one"}))
         get_grant_code(auth_code)
-        request_access_token
+        request_access_token 
         token_1 = JSON.parse(last_response.body)["access_token"]
         auth_code = get_auth_code(default_params.merge({:instance_name => "a-2", :instance_description => "a two"}))
         get_grant_code(auth_code)
-        request_access_token
+        request_access_token 
         token_2 = JSON.parse(last_response.body)["access_token"]
         assert_not_equal token_1, token_2
       end
-    end
+    end   
 
     context "using username/password" do
       should "respond with same tokens for same client instances" do
         tokens = []
-        params =  {:instance_name => "apollo-1", :instance_description => "apollo one"}
+        params =  {:instance_name => "apollo-1", :instance_descrtiption => "apollo one"}
         2.times do |index|
           request_with_username_password "cowbell", "more", "read", params
           tokens << JSON.parse(last_response.body)["access_token"]
@@ -362,9 +362,9 @@ class AccessGrantTest < Test::Unit::TestCase
       end
 
       should "respond with different tokens for different client instances" do
-        request_with_username_password "cowbell", "more", "read", {:instance_name => "apollo-1", :instance_description => "apollo one"}
+        request_with_username_password "cowbell", "more", "read", {:instance_name => "apollo-1", :instance_descrtiption => "apollo one"}
         token_1 = JSON.parse(last_response.body)["access_token"]
-        request_with_username_password "cowbell", "more", "read", {:instance_name => "apollo-2", :instance_description => "apollo two"}
+        request_with_username_password "cowbell", "more", "read", {:instance_name => "apollo-2", :instance_descrtiption => "apollo two"}
         token_2 = JSON.parse(last_response.body)["access_token"]
         assert_not_equal token_1, token_2
       end

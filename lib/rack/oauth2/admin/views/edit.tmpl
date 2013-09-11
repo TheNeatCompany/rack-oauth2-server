@@ -1,0 +1,80 @@
+{{if id}}<form action="#/client/${id}" method="put" class="client edit">
+{{else}}<form action="#/clients" method="post" class="client new">{{/if}}
+  <div class="fields">
+    <h2>Identification</h2>
+    <img id="image">
+    <label>Display Name
+      <input type="text" name="displayName" value="${displayName}" size="70" required autofocus>
+      <p class="hint">This is the application name that users see when asked to authorize.</p>
+    </label>
+    <label>Site URL
+      <input type="url" name="link" value="${link}" size="70" required>
+      <p class="hint">This is a link to the application's site.</p>
+    </label>
+    <label>Image URL
+      <input type="url" name="imageUrl" value="${imageUrl}" size="70">
+      <p class="hint">This is a link to the application's icon (48x48).</p>
+    </label>
+    <label>Redirect URI
+      <input type="url" name="redirectUri" value="${redirectUri}" size="70" required>
+      <p class="hint">Users redirected back to this URL on successful authorization.</p>
+    </label>
+    <label>Notes
+      <textarea name="notes" cols="50" rows="5">${notes}</textarea>
+      <p class="hint">For internal use.</p>
+    </label>
+    {{if id}}<button>Save Changes</button>
+    {{else}}<button>Create Client</button>{{/if}}
+  </div>
+  <div class="scope">
+    <h2>Scope</h2>
+    {{each common}}
+      <label class="check"><input type="checkbox" name="scope" value="${this}" ${scope.indexOf(this.toString()) < 0 ? null : "checked"}>${this}</label>
+    {{/each}}
+    {{each scope}}
+      {{if common.indexOf(this.toString()) < 0}}
+      <label class="check uncommon"><input type="checkbox" name="scope" value="${this}" checked>${this}</label>
+      {{/if}}
+    {{/each}}
+    <label>Uncommon
+      <input type="text" name="scope" value="" size="35">
+      <p class="hint">Space separated list of uncommon scope.</p>
+    </label>
+  </div>
+  <hr>
+</form>
+<script type="text/javascript">
+  $(function() {
+    var image = $("#image");
+    image.load(function() {
+      image.show().removeClass("loading");
+    }).error(function() {
+      if (image.attr("src"))
+        image.removeClass("loading");
+    });
+
+    var imageUrl = $("input[name=imageUrl]");
+    imageUrl.change(function() {
+      var url = $(this).val().trim();
+      if (url == "") {
+        image.hide();
+      } else {
+        image.attr("src", "admin/images/loading.gif").show().addClass("loading");
+        setTimeout(function() { image.attr("src", url); }, 10);
+      }
+    }).trigger("change");
+
+    $("input[name=link]").change(function() {
+      if (imageUrl.val().trim() == "") {
+        $("#image").show().addClass("loading").attr("src", null);
+        var image = new Image();
+        image.src = $(this).val().trim().replace(/^(https?:\/\/)(.+?)(\/.*|$)/, "$1$2/favicon.ico");
+        image.onload = function() {
+          if (imageUrl.val().trim() == "") {
+            imageUrl.val(image.src).trigger("change");
+          } 
+        }
+      }
+    });
+  })
+</script>

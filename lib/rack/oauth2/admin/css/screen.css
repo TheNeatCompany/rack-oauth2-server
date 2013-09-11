@@ -1,0 +1,347 @@
+html {
+  background: #eee;
+}
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  font: 12pt "Helvetica", "Lucida Sans", "Verdana";
+}
+
+a { text-decoration: none; color: #00c; }
+a:hover, a:focus { text-decoration: underline; color: #00c; }
+h1, h2 {
+  text-shadow: rgba(255,255,255,.2) 0 1px 1px;
+  color: rgb(76, 86, 108);
+}
+h1 { font-size: 18pt; margin: 0.6em 0 }
+h2 { font-size: 16pt; margin: 0.3em 0 }
+
+label {
+  display: block;
+  color: #000;
+  font-weight: 600;
+  font-size: 0.9em;
+  margin: 0.9em 0;
+}
+label input, label textarea, label select {
+  display: block;
+}
+label.check {
+  font-weight: normal;
+}
+label.check input {
+  display: inline;
+}
+label input, label textarea {
+  font-size: 12pt;
+  line-height: 1.3em;
+}
+label .hint {
+  font-weight: normal;
+  color: #666;
+  margin: 0;
+}
+button {
+  font-size: 11pt;
+  text-shadow: 0 -1px 1px rgba(0,0,0,0.25);
+  border: 1px solid #dddddd;
+  background: #f6f6f6 50% 50% repeat-x;
+  font-weight: bold;
+  color: #0073ea;
+  outline: none;
+  line-height: 1.3em;
+  vertical-align: bottom;
+  padding: 2px 8px;
+  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(rgba(226,226,226,0.0)), to(rgba(226,226,226,1.0)));
+  -webkit-border-radius: 4px; -moz-border-radius: 4px;
+  -moz-box-shadow: 0 0 4px rgba(0,0,0,0.0);
+  -webkit-box-shadow: 0 0 4px rgba(0,0,0,0.0);
+}
+button:hover, button:focus {
+  text-shadow: 0 -1px 1px rgba(255,255,255,0.25);
+  border: 1px solid #0073ea;
+  background: #0073ea 50% 50% repeat-x;
+  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(rgba(0, 115, 234, 0.5)), to(rgba(0,115,234, 1.0)));
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+  -moz-box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+button:active { background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(rgba(0, 115, 234, 1.0)), to(rgba(0,115,234, 0.5))); position: relative; top: 1px }
+.error {
+  color: #f44;
+  padding-left: 1em;
+}
+
+
+/* Message dropping down from the top */
+#notice {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  line-height: 1.6em;
+  background: #FFFE36;
+  color: #000;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+  z-index: 99;
+}
+
+#header {
+  margin: 0;
+  padding: 1em 2em 3em 2em;
+  border-bottom: 2px solid #CCC;
+  background: #6595A4;
+  color: #fff;
+}
+#header .title {
+  font-size: 18pt;
+  font-weight: bold;
+  display: block;
+  line-height: 32px;
+  float: left;
+}
+#header .title a {
+  color: #fff;
+  text-shadow: white 0px 0px 1px;
+  text-decoration: none;
+}
+#header .title img {
+  width: 32px;
+  height: 32px;
+  vertical-align: bottom;
+}
+#header .signout, #header .signin {
+  color: #C8E9F3;
+  float: right;
+  font-size: 11pt;
+  line-height: 32px;
+  display: none;
+}
+
+#main {
+  margin: 0;
+  padding: 2em 2em 4em 2em;
+  background: #fff;
+  border: 1px solid #fff;
+  min-width: 960px;
+}
+#footer {
+  background: #eee;
+  color: #666;
+  border-top: 1px solid #ccc;
+  font-size: 90%;
+  padding: 0 2em 2em 2em;
+}
+
+table {
+  width: 100%;
+  table-layout: auto;
+  empty-cells: show;
+  border-collapse: separate;
+  border-spacing: 0px;
+  margin-top: 2em;
+}
+table th {
+  text-align: left;
+  border-bottom: 1px solid #ccc;
+  margin-right: 48px;
+}
+table td {
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #ddf;
+  line-height: 32px;
+  margin: 0;
+  padding: 0;
+}
+table tr:hover td {
+  background: #ddf;
+}
+table td.created, table td.revoke, table td.accessed {
+  width: 6em;
+}
+table tr.revoked td, table tr.revoked a {
+  color: #888;
+}
+table button {
+  margin-top: -2px;
+  font-size: 10pt;
+}
+
+table.clients td.name {
+  padding-left: 32px;
+}
+table.clients td.name img {
+  width: 24px;
+  height: 24px;
+  border: none;
+  margin: 4px 4px -4px -32px;
+}
+table.clients td.secrets {
+  width: 28em;
+}
+table.clients td.secrets dl {
+  display: none;
+  width: 40em;
+  margin: 0 -12em 0.6em 0;
+  line-height: 1.3em;
+}
+table.clients td.secrets dt {
+  width: 4em;
+  float: left;
+  color: #888;
+  margin-bottom: 0.3em;
+}
+table.clients td.secrets dd:after {
+  content: ".";
+  display: block;
+  clear: both;
+  visibility: hidden;
+  line-height: 0;
+  height: 0;
+}
+
+table.tokens td.token {
+  width: 36em;
+}
+table.tokens td.scope {
+  float: none;
+}
+
+.pagination {
+  width: 100%;
+  margin-top: 2em;
+}
+.pagination a[rel=next] {
+  float: right;
+}
+.pagination a[rel=previous] {
+  float: left;
+}
+
+.metrics {
+  height: 100px;
+}
+.metrics #fig {
+  float: left;
+  width: 500px;
+  height: 60px;
+}
+.metrics:after {
+  content: ".";
+  display: block;
+  clear: both;
+  visibility: hidden;
+  line-height: 0;
+  height: 0;
+}
+.badges {
+  list-style: none;
+  margin:  0;
+  padding: 0;
+  text-align: right;
+  width: 100%;
+}
+.badges li {
+  display: inline-block;
+  margin-left: 8px;
+  min-width: 8em;
+}
+.badges  big {
+  font-size: 22pt;
+  display: block;
+  text-align: center;
+}
+.badges small {
+  font-size: 11pt;
+  display: block;
+  text-align: center;
+}
+
+.client .details {
+  margin: 0 0 2em 0;
+}
+.client .details .name {
+  margin: 0;
+  font-size: 16pt;
+  font-weight: bold;
+  float: left;
+}
+.client .details img {
+  border: none;
+  width: 24px;
+  height: 24px;
+  vertical-align: bottom;
+}
+.client .details .actions {
+  float: left;
+  line-height: 20pt;
+  margin-left: 1em;
+}
+.client .details .actions a {
+  margin: 0 0 0 0.3em;
+}
+.client .details .meta {
+  clear: both;
+  display: block;
+  color: #888;
+  font-size: 10pt;
+}
+.client .details .notes {
+  font-size: 11pt;
+  margin: 0.2em 0;
+}
+
+.client.new, .client.edit {
+  margin: 0;
+  padding: 1em;
+  border: 1px solid #eee;
+}
+.client .fields>#image {
+  float: left;
+  margin: 0.5em 12px 0 0;
+  width: 48px;
+  height: 48px;
+}
+.client .fields>* {
+  margin-left: 60px;
+}
+.client .fields {
+  float: left;
+}
+.client .scope {
+  float: right;
+}
+.client .scope .uncommon {
+  color: red;
+}
+.client hr {
+  clear: both;
+  border: none;
+  margin: 1em;
+}
+
+.no-access {
+  margin: 0;
+  padding: 0;
+}
+.no-access h1 {
+  color: red;
+}
+
+#throbber {
+  display: none;
+  position: absolute;
+  top: 6em;
+  right: 2em;
+  width: 48px;
+  height: 48px;
+  content: "";
+}
+.loading {
+  background: url("../images/loading.gif") no-repeat 50% 50%;
+}
