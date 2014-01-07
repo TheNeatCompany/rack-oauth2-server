@@ -1,3 +1,52 @@
+2013-09-30 Version 2.8.1
+
+Includes a content-type for unauthorized requests (johnallen3d)
+
+Prevents stack level too deep error (johnallen3d)
+
+Allow token use in MongoDB cappedCollections (cstuss)
+
+
+2012-07-16 Version 2.8.0
+
+Support for assertion type callbacks (Paul Covell)
+
+
+2012-07-10 Version 2.7.0
+
+Support for expiring tokens (Fabrizio Regini & Daniel Vartanov)
+
+
+2012-06-18 Version 2.6.1
+
+Added missing require "json" statement (Gaku Ueda)
+
+
+2012-03-27 Version 2.6.0
+
+Adding support for JWT tokens in the "assertion" grant type (Brian Ploetz)
+
+
+2012-03-26 Version 2.5.1
+
+Issue #13: Fix bug in oauth2-server introduced by pull request #9 (Rafael Chacon)
+
+
+2012-03-23 Version 2.5.0
+
+Issue #12: Changed two-legged OAuth flow back to always returning a new access token
+for a given client_id/client_secret pair (Brian Ploetz)
+
+
+2012-03-15 Version 2.4.2
+
+Fixed Server::Admin.mount ignoring path (ABrukish).
+
+Fixed a few issues with documentation (Jesse Miller).
+
+Fixed issue with Rack::Lint in development mode using rackup (Jared Allen)
+
+
 2011-08-01 Version 2.4.1
 
 Fixes error in oauth2-server command line (Michael Saffitz)

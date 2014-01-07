@@ -14,10 +14,21 @@ if (i = ARGV.index("--db")) && ARGV[i+1]
   Server.options.database = db
   ARGV[i,2] = []
 end
+
 if (i = ARGV.index("--port") || ARGV.index("-p")) && ARGV[i+1]
   port = ARGV[i + 1].to_i
   ARGV[i,2] = []
 end
+
+
+if (i = ARGV.index("--collection-prefix") || ARGV.index("-c")) && ARGV[i+1]
+  prefix = ARGV[i + 1]
+  Server.options.collection_prefix = prefix
+  ARGV[i,2] = []
+else
+  Server.options.collection_prefix = 'oauth2'
+end
+
 
 
 case ARGV[0]
@@ -51,6 +62,24 @@ when "register"
   puts "Registered #{client.display_name}"
   puts "ID\t#{client.id}"
   puts "Secret\t#{client.secret}"
+
+when "register_issuer"
+  fail "No database. Use the --db option to tell us which database to use" unless Server.options.database
+  begin
+    print "Identifier (typically a URL):\t"
+    identifier = $stdin.gets
+    print "HMAC secret:\t"
+    hmac_secret = $stdin.gets
+    print "RSA public key:\t\t"
+    public_key = $stdin.gets
+    issuer = Server.register_issuer(:identifier => identifier, :hmac_secret => hmac_secret, :public_key => public_key)
+  rescue
+    puts "\nFailed to register issuer: #{$!}"
+    exit -1
+  end
+  puts "Registered Issuer #{issuer.identifier}"
+  puts "HMAC secret\t#{issuer.hmac_secret}"
+  puts "RSA public key\t#{issuer.public_key}"
 
 when "setup"
 
@@ -193,11 +222,13 @@ Commands:
   migrate         Run this when migrating from 1.x to 2.x
   practice        Runs a dummy OAuth 2.0 server, use this to test your OAuth 2.0 client
   register        Register a new client application
+  register_issuer Register a new assertion issuer
   setup           Create new admin account and help you setup the OAuth Web console
 
 Options:
-  --db database   Database name or connection URL
-  --port number   Port to run admin server, detault is 8080
+  --db database        Database name or connection URL
+  --port number        Port to run admin server, detault is 8080
+  --collection-prefix  Prefix to use for MongoDB collections created by rack-oauth2-server, defaults to "oauth2".
   TEXT
   exit -1
 

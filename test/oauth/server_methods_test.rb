@@ -27,6 +27,10 @@ class ServerTest < Test::Unit::TestCase
       assert_not_nil proc
       assert proc.lambda?
     end
+
+    should "set oauth.collection_prefix" do
+      assert_equal "oauth2_prefix", Server.options.collection_prefix
+    end
   end
 
   context "get_auth_request" do
@@ -290,8 +294,16 @@ class ServerTest < Test::Unit::TestCase
     should "return different token for different scope" do
       assert @token != Server.token_for("Batman", client.id, %w{read})
     end
-  end
 
+    should 'expire token after the specified amount of time' do
+      Server::AccessToken.collection.drop
+      token = Server.token_for("Batman", client.id, %w{read write}, 60)
+
+      Timecop.travel 120 do
+        assert token != Server.token_for("Batman", client.id, %w{read write})
+      end
+    end
+  end
 
   context "list access tokens" do
     setup do
@@ -311,4 +323,16 @@ class ServerTest < Test::Unit::TestCase
 
   end
 
+  context "issuers" do
+    setup do
+      @issuer = Server.register_issuer(:identifier => "http://www.hmacissuer.com", :hmac_secret => "foo", :notes => "Test HMAC Issuer")
+    end
+
+    should "return a known issuer" do
+      issuer = Server.get_issuer("http://www.hmacissuer.com")
+      assert issuer
+      assert issuer.hmac_secret == "foo"
+      assert issuer.notes == "Test HMAC Issuer"
+    end
+  end
 end

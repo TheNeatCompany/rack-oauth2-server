@@ -40,7 +40,7 @@ module Rack
         def database
           @database ||= Server.options.database
           raise "No database Configured. You must configure it using Server.options.database = Mongo::Connection.new()[db_name]" unless @database
-          raise "You set Server.database to #{Server.database.class}, should be a Mongo::DB object" unless Mongo::DB === @database
+          raise "You set Server.database to #{@database.class}, should be a Mongo::DB object" unless Mongo::DB === @database
           @database
         end
       end
@@ -54,4 +54,4 @@ require "rack/oauth2/models/client"
 require "rack/oauth2/models/auth_request"
 require "rack/oauth2/models/access_grant"
 require "rack/oauth2/models/access_token"
-
+require "rack/oauth2/models/issuer"

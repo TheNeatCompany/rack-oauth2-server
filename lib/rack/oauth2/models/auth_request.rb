@@ -29,7 +29,8 @@ module Rack
           end
 
           def collection
-            Server.database["oauth2.auth_requests"]
+            prefix = Server.options[:collection_prefix]
+            Server.database["#{prefix}.auth_requests"]
           end
         end
 
