@@ -14,6 +14,11 @@ module Rack
             Server.new_instance self, collection.find_one({ :_id=>token, :revoked=>nil })
           end
 
+          # Find AccessToken from token. Returns revoked tokens.
+          def from_all(token)
+            Server.new_instance self, collection.find_one({ :_id=>token })
+          end
+
           # Get an access token (create new one if necessary).
           #
           # You can set optional expiration in seconds. If zero or nil, token
