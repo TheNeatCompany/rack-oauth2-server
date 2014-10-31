@@ -32,5 +32,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'timecop', '~>0.5.9.1'
   spec.add_development_dependency 'ap', '~>0.1.1'
   spec.add_development_dependency 'crack', '~>0.3.2'
-  spec.add_development_dependency 'rails', '~>3.2'
+  spec.add_development_dependency('minitest', '~> 4.0')
 end
