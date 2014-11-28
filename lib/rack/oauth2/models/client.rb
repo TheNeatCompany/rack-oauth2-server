@@ -8,9 +8,7 @@ module Rack
           # Authenticate a client request. This method takes three arguments,
           # Find Client from client identifier.
           def find(client_id)
-            id = BSON::ObjectId(client_id.to_s)
-            Server.new_instance self, collection.find_one(id)
-          rescue BSON::InvalidObjectId
+            Server.new_instance self, collection.find(:display_name => field)
           end
 
           # Create a new client. Client provides the following properties:
@@ -44,10 +42,7 @@ module Rack
 
           # Lookup client by ID, display name or URL.
           def lookup(field)
-            id = BSON::ObjectId(field.to_s)
-            Server.new_instance self, collection.find_one(id)
-          rescue BSON::InvalidObjectId
-            Server.new_instance self, collection.find_one({ :display_name=>field }) || collection.find_one({ :link=>field })
+            Server.new_instance self, (collection.find(:display_name => field) || collection.find(:link=>field)).first
           end
 
           # Returns all the clients in the database, sorted alphabetically.
@@ -102,17 +97,17 @@ module Rack
         # this client. Ward off the evil.
         def revoke!
           self.revoked = Time.now.to_i
-          Client.collection.update({ :_id=>id }, { :$set=>{ :revoked=>revoked } })
-          AuthRequest.collection.update({ :client_id=>id }, { :$set=>{ :revoked=>revoked } })
-          AccessGrant.collection.update({ :client_id=>id }, { :$set=>{ :revoked=>revoked } })
-          AccessToken.collection.update({ :client_id=>id }, { :$set=>{ :revoked=>revoked } })
+          Client.collection.find({ :_id=>id }).update({ :$set=>{ :revoked=>revoked } })
+          AuthRequest.collection.find({ :client_id=>id }).update({ :$set=>{ :revoked=>revoked } })
+          AccessGrant.collection.find({ :client_id=>id }).update({ :$set=>{ :revoked=>revoked } })
+          AccessToken.collection.find({ :client_id=>id }).update({ :$set=>{ :revoked=>revoked } })
         end
 
         def update(args)
           fields = [:display_name, :link, :image_url, :notes].inject({}) { |h,k| v = args[k]; h[k] = v if v; h }
           fields[:redirect_uri] = Server::Utils.parse_redirect_uri(args[:redirect_uri]).to_s if args[:redirect_uri]
           fields[:scope] = Server::Utils.normalize_scope(args[:scope])
-          self.class.collection.update({ :_id=>id }, { :$set=>fields })
+          self.class.collection.find({ :_id=>id }).update({ :$set=>fields })
           self.class.find(id)
         end
 
