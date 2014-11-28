@@ -8,7 +8,7 @@ module Rack
           # Authenticate a client request. This method takes three arguments,
           # Find Client from client identifier.
           def find(client_id)
-            Server.new_instance self, collection.find(:display_name => field)
+            Server.new_instance self, collection.find(:display_name => field).first
           end
 
           # Create a new client. Client provides the following properties:
@@ -31,33 +31,38 @@ module Rack
                         :notes=>args[:notes].to_s, :scope=>scope,
                         :created_at=>Time.now.to_i, :revoked=>nil }
             if args[:id] && args[:secret]
-              fields[:_id], fields[:secret] = BSON::ObjectId(args[:id].to_s), args[:secret]
+              fields[:_id], fields[:secret] = BSON::ObjectId.from_string(args[:id].to_s), args[:secret]
               collection.insert(fields, :safe=>true)
             else
               fields[:secret] = Server.secure_random
-              fields[:_id] = collection.insert(fields)
+              fields[:_id] = BSON::ObjectId.new
+              collection.insert(fields)
             end
             Server.new_instance self, fields
           end
 
           # Lookup client by ID, display name or URL.
           def lookup(field)
-            Server.new_instance self, (collection.find(:display_name => field) || collection.find(:link=>field)).first
+            data = if field.is_a?(BSON::ObjectId)
+              collection.find(_id: field).first
+            else 
+              (collection.find(:display_name => field) || collection.find(:link=>field)).first
+            end
+
+            Server.new_instance self, data
           end
 
           # Returns all the clients in the database, sorted alphabetically.
           def all
-            collection.find({}, { :sort=>[[:display_name, Mongo::ASCENDING]] }).
-              map { |fields| Server.new_instance self, fields }
+            collection.find.sort(display_name: 1).map { |fields| Server.new_instance self, fields }
           end
 
           # Deletes client with given identifier (also, all related records).
           def delete(client_id)
-            id = BSON::ObjectId(client_id.to_s)
-            Client.collection.remove({ :_id=>id })
-            AuthRequest.collection.remove({ :client_id=>id })
-            AccessGrant.collection.remove({ :client_id=>id })
-            AccessToken.collection.remove({ :client_id=>id })
+            Client.collection.find({ :_id => client_id }).remove
+            AuthRequest.collection.find({ :client_id => client_id }).remove
+            AccessGrant.collection.find({ :client_id => client_id }).remove
+            AccessToken.collection.find({ :client_id => client_id }).remove
           end
 
           def collection
