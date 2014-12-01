@@ -9,7 +9,8 @@ module Rack
         class << self
           # Find AuthRequest from identifier.
           def find(request_id)
-            Server.new_instance self, collection.find(request_id).first
+            obj_id = request_id.is_a?(BSON::ObjectId) ? request_id : BSON::ObjectId.from_string(request_id)
+            Server.new_instance self, collection.find(_id: obj_id).first
           end
 
           # Create a new authorization request. This holds state, so in addition
@@ -17,12 +18,13 @@ module Rack
           # and any state value to pass back in that redirect.
           def create(client, scope, redirect_uri, response_type, state, instance_name = 'default-client', instance_description = 'default client')
             scope = Utils.normalize_scope(scope) & client.scope # Only allowed scope
-            fields = { :client_id=>client.id, :scope=>scope, :redirect_uri=>client.redirect_uri || redirect_uri,
+            fields = { :_id => BSON::ObjectId.new,
+                       :client_id=>client.id, :scope=>scope, :redirect_uri=>client.redirect_uri || redirect_uri,
                        :response_type=>response_type, :state=>state,
                        :grant_code=>nil, :authorized_at=>nil,
                        :created_at=>Time.now.to_i, :revoked=>nil,
                        :instance_name => instance_name, :instance_description => instance_description }
-            fields[:_id] = collection.insert(fields)
+            collection.insert(fields)
             Server.new_instance self, fields
           end
 

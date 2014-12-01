@@ -70,7 +70,7 @@ module Rack
           self.access_token = access_token.token
           self.granted_at = Time.now.to_i
           self.class.collection.find({ :_id=>code, :access_token=>nil, :revoked=>nil }).update({ :$set=>{ :granted_at=>granted_at, :access_token=>access_token.token } }, :safe=>true)
-          reload = self.class.collection.find({ :_id=>code, :revoked=>nil }, { :fields=>%w{access_token} }).first
+          reload = self.class.collection.find({ :_id=>code, :revoked=>nil }).first
           raise InvalidGrantError unless reload && reload["access_token"] == access_token.token
           return access_token
         end

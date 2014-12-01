@@ -8,7 +8,14 @@ module Rack
           # Authenticate a client request. This method takes three arguments,
           # Find Client from client identifier.
           def find(client_id)
-            Server.new_instance self, collection.find(:display_name => field).first
+            conds = if client_id.is_a?(BSON::ObjectId)
+              { _id: client_id }
+            elsif BSON::ObjectId.legal?(client_id)
+              { _id: BSON::ObjectId.from_string(client_id) }
+            else 
+              { display_name: client_id }
+            end
+            Server.new_instance self, collection.find(conds).first
           end
 
           # Create a new client. Client provides the following properties:

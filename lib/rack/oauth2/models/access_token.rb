@@ -62,9 +62,8 @@ module Rack
           # Returns all access tokens for a given client, Use limit and offset
           # to return a subset of tokens, sorted by creation date.
           def for_client(client_id, offset = 0, limit = 100)
-            client_id = BSON::ObjectId(client_id.to_s)
-            collection.find({ :client_id=>client_id }, { :sort=>[[:created_at, Mongo::ASCENDING]], :skip=>offset, :limit=>limit }).
-              map { |token| Server.new_instance self, token }
+            client_id = BSON::ObjectId.from_string(client_id.to_s)
+            collection.find(client_id: client_id).sort(created_at: 1).skip(offset).limit(limit).map{|token| Server.new_instance self, token }
           end
 
           # Returns count of access tokens.
@@ -82,7 +81,7 @@ module Rack
             elsif filter.has_key?(:revoked)
               select[:revoked] = filter[:revoked] ? { :$ne=>nil } : { :$eq=>nil }
             end
-            select[:client_id] = BSON::ObjectId(filter[:client_id].to_s) if filter[:client_id]
+            select[:client_id] = BSON::ObjectId.from_string(filter[:client_id].to_s) if filter[:client_id]
             collection.find(select).count
           end
 
@@ -91,7 +90,7 @@ module Rack
             select = { :$gt=> { :created_at=>Time.now - 86400 * days } }
             select = {}
             if filter[:client_id]
-              select[:client_id] = BSON::ObjectId(filter[:client_id].to_s)
+              select[:client_id] = BSON::ObjectId.from_string(filter[:client_id].to_s)
             end
             raw = Server::AccessToken.collection.group("function (token) { return { ts: Math.floor(token.created_at / 86400) } }",
               select, { :granted=>0 }, "function (token, state) { state.granted++ }")
