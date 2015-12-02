@@ -49,8 +49,8 @@ module Rack
                       :instance_name => instance_name, :instance_description => instance_description }
 
             token[:identity] = identity if identity
-            collection.insert token
-            Client.collection.find({ :_id=>client.id }).update({ :$inc=>{ :tokens_granted=>1 } })
+            collection.insert_one(token)
+            Client.collection.find_one_and_update({ :_id=>client.id },{ :$inc=>{ :tokens_granted=>1 } })
             Server.new_instance self, token
           end
 
