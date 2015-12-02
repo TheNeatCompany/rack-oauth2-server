@@ -24,7 +24,7 @@ module Rack
                        :grant_code=>nil, :authorized_at=>nil,
                        :created_at=>Time.now.to_i, :revoked=>nil,
                        :instance_name => instance_name, :instance_description => instance_description }
-            collection.insert(fields)
+            collection.insert_one(fields)
             Server.new_instance self, fields
           end
 

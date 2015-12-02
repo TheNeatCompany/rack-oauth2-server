@@ -39,11 +39,11 @@ module Rack
                         :created_at=>Time.now.to_i, :revoked=>nil }
             if args[:id] && args[:secret]
               fields[:_id], fields[:secret] = BSON::ObjectId.from_string(args[:id].to_s), args[:secret]
-              collection.insert(fields, :safe=>true)
+              collection.insert_one(fields, :safe=>true)
             else
               fields[:secret] = Server.secure_random
               fields[:_id] = BSON::ObjectId.new
-              collection.insert(fields)
+              collection.insert_one(fields)
             end
             Server.new_instance self, fields
           end
