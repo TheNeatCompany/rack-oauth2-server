@@ -131,7 +131,7 @@ module Rack
         def access!
           today = (Time.now.to_i / 3600) * 3600
           if last_access.nil? || last_access < today
-            AccessToken.collection.find({ :_id=>token }).update({ :$set=>{ :last_access=>today, :prev_access=>last_access } })
+            AccessToken.collection.find_one_and_update({ :_id=>token }, { :$set=>{ :last_access=>today, :prev_access=>last_access } })
             self.last_access = today
           end
         end
@@ -139,8 +139,8 @@ module Rack
         # Revokes this access token.
         def revoke!
           self.revoked = Time.now.to_i
-          AccessToken.collection.find({ :_id=>token }).update({ :$set=>{ :revoked=>revoked } })
-          Client.collection.find({ :_id=>client_id }).update({ :$inc=>{ :tokens_revoked=>1 } })
+          AccessToken.collection.find_one_and_update({ :_id=>token }, { :$set=>{ :revoked=>revoked } })
+          Client.collection.find_one_and_update({ :_id=>client_id }, { :$inc=>{ :tokens_revoked=>1 } })
         end
 
         Server.create_indexes do
