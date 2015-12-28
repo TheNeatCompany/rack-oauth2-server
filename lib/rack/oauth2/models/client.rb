@@ -109,17 +109,17 @@ module Rack
         # this client. Ward off the evil.
         def revoke!
           self.revoked = Time.now.to_i
-          Client.collection.find({ :_id=>id }).update({ :$set=>{ :revoked=>revoked } })
-          AuthRequest.collection.find({ :client_id=>id }).update({ :$set=>{ :revoked=>revoked } })
-          AccessGrant.collection.find({ :client_id=>id }).update({ :$set=>{ :revoked=>revoked } })
-          AccessToken.collection.find({ :client_id=>id }).update({ :$set=>{ :revoked=>revoked } })
+          Client.collection.find_one_and_update({ :_id => id }, { :$set => { :revoked => revoked } })
+          AuthRequest.collection.find_one_and_update({ :client_id => id }, { :$set => { :revoked => revoked } })
+          AccessGrant.collection.find_one_and_update({ :client_id => id }, { :$set => { :revoked => revoked } })
+          AccessToken.collection.find_one_and_update({ :client_id => id }, { :$set => { :revoked => revoked } })
         end
 
         def update(args)
           fields = [:display_name, :link, :image_url, :notes].inject({}) { |h,k| v = args[k]; h[k] = v if v; h }
           fields[:redirect_uri] = Server::Utils.parse_redirect_uri(args[:redirect_uri]).to_s if args[:redirect_uri]
           fields[:scope] = Server::Utils.normalize_scope(args[:scope])
-          self.class.collection.find({ :_id=>id }).update({ :$set=>fields })
+          self.class.collection.find_one_and_update({ :_id => id }, { :$set => fields })
           self.class.find(id)
         end
 
