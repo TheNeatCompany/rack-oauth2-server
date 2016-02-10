@@ -260,7 +260,7 @@ module Rack
           token ||= request.GET['access_token'] || request.POST['access_token']
         end
 
-        if token
+        if token && !request.env["oauth.access_token"]
           begin
             access_token = AccessToken.from_token(token)
             raise InvalidTokenError if access_token.nil? || access_token.revoked
@@ -278,32 +278,28 @@ module Rack
             logger.info "RO2S: HTTP authorization failed #{ex.message}" if logger
             return unauthorized(request)
           end
+        end
 
+        response = @app.call(env)
+        if token && response[0] == 403
           # We expect application to use 403 if request has insufficient scope,
           # and return appropriate WWW-Authenticate header.
-          response = @app.call(env)
-          if response[0] == 403
-            scope = Utils.normalize_scope(response[1].delete("oauth.no_scope"))
-            challenge = 'OAuth realm="%s", error="insufficient_scope", scope="%s"' % [(options.realm || request.host), scope.join(" ")]
-            response[1]["WWW-Authenticate"] = challenge
-            return response
-          else
-            return response
-          end
+          scope = Utils.normalize_scope(response[1].delete("oauth.no_scope"))
+          challenge = 'OAuth realm="%s", error="insufficient_scope", scope="%s"' % [(options.realm || request.host), scope.join(" ")]
+          response[1]["WWW-Authenticate"] = challenge
+          return response
+        elsif !token && response[1] && response[1].delete("oauth.no_access")
+          logger.debug "RO2S: Unauthorized request" if logger
+          # OAuth access required.
+          return unauthorized(request)
+        elsif !token && response[1] && response[1]["oauth.authorization"]
+          # 3.  Obtaining End-User Authorization
+          # Flow ends here.
+          return authorization_response(request, response, logger)
         else
-          response = @app.call(env)
-          if response[1] && response[1].delete("oauth.no_access")
-            logger.debug "RO2S: Unauthorized request" if logger
-            # OAuth access required.
-            return unauthorized(request)
-          elsif response[1] && response[1]["oauth.authorization"]
-            # 3.  Obtaining End-User Authorization
-            # Flow ends here.
-            return authorization_response(request, response, logger)
-          else
-            return response
-          end
+          return response
         end
+
       end
 
     protected
