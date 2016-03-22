@@ -20,11 +20,11 @@ module Rack
           super :access_denied, "You are not allowed to access this resource."
         end
       end
-      
+
       # Cannot issue an access token because the user has not purchased the required service
       class PaymentRequiredError < OAuthError
         def initialize
-          super :payment_required, "Mobile access is not included with your current NeatCloud plan. Please upgrade."
+          super :payment_required, "Please upgrade your NeatCloud plan."
         end
       end
 
