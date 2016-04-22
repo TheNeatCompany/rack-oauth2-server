@@ -143,6 +143,12 @@ module Rack
           Client.collection.find_one_and_update({ :_id=>client_id }, { :$inc=>{ :tokens_revoked=>1 } })
         end
 
+        def restore!
+          self.revoked = nil
+          AccessToken.collection.update({ :_id=>token }, { :$set=>{ :revoked=>revoked } })
+          Client.collection.update({ :_id=>client_id }, { :$inc=>{ :tokens_revoked=>-1 } })
+        end
+
         Server.create_indexes do
           # Used to revoke all pending access grants when revoking client.
           collection.create_index [[:client_id, Mongo::ASCENDING]]
