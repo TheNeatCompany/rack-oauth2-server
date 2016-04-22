@@ -211,7 +211,7 @@ module Rack
       #
       Options = Struct.new(:access_token_path, :authenticator, :assertion_handler, :authorization_types,
         :authorize_path, :database, :host, :param_authentication, :path, :realm,
-        :expires_in, :logger, :authorizer, :collection_prefix)
+        :expires_in, :logger, :authorizer, :collection_prefix, :restore)
 
       # Global options. This is what we set during configuration (e.g. Rails'
       # config/application), and options all handlers inherit by default.
@@ -262,7 +262,8 @@ module Rack
 
         if token && !request.env["oauth.access_token"]
           begin
-            access_token = AccessToken.from_token(token)
+            access_token = AccessToken.from_all(token)
+            access_token.restore! if access_token && access_token.revoked && options.restore.call(access_token)
             raise InvalidTokenError if access_token.nil? || access_token.revoked
             raise ExpiredTokenError if access_token.expires_at && access_token.expires_at <= Time.now.to_i
             request.env["oauth.access_token"] = token
