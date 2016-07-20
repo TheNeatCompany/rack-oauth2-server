@@ -12,7 +12,7 @@ module Rack
               { _id: client_id }
             elsif BSON::ObjectId.legal?(client_id)
               { _id: BSON::ObjectId.from_string(client_id) }
-            else 
+            else
               { display_name: client_id }
             end
             Server.new_instance self, collection.find(conds).first
@@ -25,7 +25,7 @@ module Rack
           # # :redirect_uri -- Registered redirect URI.
           # # :scope -- List of names the client is allowed to request.
           # # :notes -- Free form text.
-          # 
+          #
           # This method does not validate any of these fields, in fact, you're
           # not required to set them, use them, or use them as suggested. Using
           # them as suggested would result in better user experience.  Don't ask
@@ -52,7 +52,7 @@ module Rack
           def lookup(field)
             data = if field.is_a?(BSON::ObjectId)
               collection.find(_id: field).first
-            else 
+            else
               (collection.find(:display_name => field) || collection.find(:link=>field)).first
             end
 
@@ -66,10 +66,10 @@ module Rack
 
           # Deletes client with given identifier (also, all related records).
           def delete(client_id)
-            Client.collection.find({ :_id => client_id }).remove
-            AuthRequest.collection.find({ :client_id => client_id }).remove
-            AccessGrant.collection.find({ :client_id => client_id }).remove
-            AccessToken.collection.find({ :client_id => client_id }).remove
+            Client.collection.find_one_and_delete({ :_id => client_id })
+            AuthRequest.collection.find_one_and_delete({ :client_id => client_id })
+            AccessGrant.collection.find_one_and_delete({ :client_id => client_id })
+            AccessToken.collection.find_one_and_delete({ :client_id => client_id })
           end
 
           def collection
