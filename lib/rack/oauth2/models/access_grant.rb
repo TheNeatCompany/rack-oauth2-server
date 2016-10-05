@@ -21,7 +21,7 @@ module Rack
                        :created_at=>Time.now.to_i, :expires_at=>expires_at, :granted_at=>nil,
                        :access_token=>nil, :revoked=>nil ,
                        :instance_name => instance_name, :instance_description => instance_description }
-            collection.insert fields
+            collection.insert_one fields
             Server.new_instance self, fields
           end
 
@@ -69,7 +69,7 @@ module Rack
           access_token = AccessToken.get_token_for(identity, client, scope, expires_in, instance_name, instance_description)
           self.access_token = access_token.token
           self.granted_at = Time.now.to_i
-          self.class.collection.find({ :_id=>code, :access_token=>nil, :revoked=>nil }).update({ :$set=>{ :granted_at=>granted_at, :access_token=>access_token.token } }, :safe=>true)
+          self.class.collection.update_one({ :_id=>code, :access_token=>nil, :revoked=>nil }, { :$set=>{ :granted_at=>granted_at, :access_token=>access_token.token } }, :safe=>true )
           reload = self.class.collection.find({ :_id=>code, :revoked=>nil }).first
           raise InvalidGrantError unless reload && reload["access_token"] == access_token.token
           return access_token
@@ -77,7 +77,7 @@ module Rack
 
         def revoke!
           self.revoked = Time.now.to_i
-          self.class.collection.find({ :_id=>code, :revoked=>nil }).update({ :$set=>{ :revoked=>revoked } })
+          self.class.collection.update_one({ :_id=>code, :revoked=>nil }, { :$set=>{ :revoked=>revoked } })
         end
 
         Server.create_indexes do

@@ -38,7 +38,7 @@ module Rack
         # A Mongo::DB object.
         def database
           @database ||= Server.options.database
-          raise "No database Configured. You must configure it using Server.options.database = `Moped::Session.new([ '127.0.0.1:27017' ])` or `Mongoid::Sessions.default`" unless @database
+          raise "No database Configured. You must configure it using Server.options.database = `Mongo::Client.new([ '127.0.0.1:27017' ], :database => ENV[\"DB\"])`" unless @database
           @database
         end
       end

@@ -4,7 +4,7 @@ require "test/unit"
 require "rack/test"
 require "shoulda"
 require "timecop"
-require 'moped'
+require "mongo"
 require "ap"
 require "json"
 require "logger"
@@ -17,8 +17,7 @@ require "rack/oauth2/server/admin"
 ENV["RACK_ENV"] = "test"
 ENV["DB"] ||= "rack_oauth2_server_test"
 
-DATABASE = Moped::Session.new(["127.0.0.1:27017"])
-DATABASE.use ENV["DB"]
+DATABASE = Mongo::Client.new(['127.0.0.1:27017'], :database => ENV["DB"])
 
 FRAMEWORK = ENV["FRAMEWORK"] || "sinatra"
 

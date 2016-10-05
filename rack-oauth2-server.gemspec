@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = '>= 1.8.7'
   spec.add_dependency "rack"
-  spec.add_dependency "moped", "~> 2"
+  spec.add_dependency "mongo", "~> 2.3.0"
   spec.add_dependency "sinatra", "~>1.3"
   spec.add_dependency "json"
   spec.add_dependency "jwt", "~>0.1.8"
@@ -32,4 +32,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'ap', '~>0.1.1'
   spec.add_development_dependency 'crack', '~>0.3.2'
   spec.add_development_dependency('minitest', '~> 4.0')
+  spec.add_development_dependency 'test-unit'
 end
