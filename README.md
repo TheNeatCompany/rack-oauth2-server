@@ -10,7 +10,7 @@ rack-oauth2-server currently implements version 10 of the OAuth 2.0 spec [http:/
 For more background, [check out the presentation slides](http://speakerdeck.com/u/assaf/p/oauth-20).
 
 
-## Adding OAuth 2.0 To Your Application
+## Adding OAuth 2.0 To Your Application.
 
 ### Step 1: Setup Your Database
 
