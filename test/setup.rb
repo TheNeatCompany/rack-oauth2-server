@@ -21,6 +21,7 @@ DATABASE = Mongo::Client.new(['127.0.0.1:27017'], :database => ENV["DB"])
 
 FRAMEWORK = ENV["FRAMEWORK"] || "sinatra"
 
+Mongo::Logger.logger.level = Logger::WARN
 
 $logger = Logger.new("test.log")
 $logger.level = Logger::DEBUG

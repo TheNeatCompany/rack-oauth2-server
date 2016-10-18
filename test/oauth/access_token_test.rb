@@ -134,7 +134,7 @@ class AccessTokenTest < Test::Unit::TestCase
           with_token
           get "/private"
         end
-        should_fail_authentication :invalid_token
+        should_fail_authentication
       end
 
       context "revoked client" do
@@ -143,7 +143,7 @@ class AccessTokenTest < Test::Unit::TestCase
           with_token
           get "/private"
         end
-        should_fail_authentication :invalid_token
+        should_fail_authentication
       end
     end
     
